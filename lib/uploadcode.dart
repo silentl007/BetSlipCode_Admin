@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 class CodeUpload extends StatefulWidget {
   @override
@@ -11,8 +13,8 @@ class _CodeUploadState extends State<CodeUpload> {
   final betcodeControl = TextEditingController();
   int initialbetType = 0;
   final List<BetCodeType> listbetType = [
-    BetCodeType('general', 1),
-    BetCodeType('specific', 2)
+    BetCodeType('General', 1),
+    BetCodeType('Specific', 2)
   ];
   String betType = '';
   final List<String> betCompany = [
@@ -20,6 +22,7 @@ class _CodeUploadState extends State<CodeUpload> {
     'Bet9ja',
     'SportyBet',
     'NairaBet',
+    'OnexBet'
   ];
   String selectbetCompany = 'Select Platform';
 
@@ -32,7 +35,7 @@ class _CodeUploadState extends State<CodeUpload> {
           child: Padding(
             padding: const EdgeInsets.all(28.0),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
                   child: DropdownButton<String>(
@@ -89,6 +92,7 @@ class _CodeUploadState extends State<CodeUpload> {
                   ),
                 ),
                 RaisedButton(
+                  child: Text('Upload'),
                   onPressed: () {
                     var finalKey = _key.currentState;
                     if (finalKey.validate()) {
@@ -124,6 +128,61 @@ class _CodeUploadState extends State<CodeUpload> {
       "odds": oddsControl.text
     };
     print(uploadData);
+    return showDialog(
+        context: context,
+        child: FutureBuilder(
+          future: uploadFuture(uploadData),
+          builder: (BuildContext context, AsyncSnapshot snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return Container(
+                color: Colors.transparent,
+                child: AlertDialog(
+                  content: LinearProgressIndicator(
+                    backgroundColor: Colors.white,
+                    valueColor: new AlwaysStoppedAnimation<Color>(Colors.red),
+                  ),
+                ),
+              );
+            } else {
+              return AlertDialog(
+                content: snapshot.data == 200
+                    ? Text('Upload Successful')
+                    : snapshot.data == 500
+                        ? Text('Betcode already added')
+                        : Text('Network Error!'),
+              );
+            }
+          },
+        ));
+  }
+
+  uploadFuture(Map data) async {
+    var encode = jsonEncode(data);
+    String link = 'https://betslipcode.herokuapp.com/post/code';
+    try {
+      var post = await http.post(link,
+          body: encode,
+          headers: {'Content-Type': 'application/json; charset=UTF-8'});
+      if (post.statusCode == 200) {
+        resetValues();
+        return post.statusCode;
+      } else {
+        return post.statusCode;
+      }
+    } catch (e) {
+      return 400;
+    }
+  }
+
+  resetValues() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+        initialbetType = 0;
+        betType = '';
+        betcodeControl.text = '';
+        oddsControl.text = '';
+      });
+    });
   }
 }
 
