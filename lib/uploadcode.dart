@@ -28,12 +28,14 @@ class _CodeUploadState extends State<CodeUpload> {
 
   @override
   Widget build(BuildContext context) {
+    Size size = MediaQuery.of(context).size;
+    double padding28 = size.height * 0.0350;
     return SafeArea(
       child: Scaffold(
         body: Form(
           key: _key,
           child: Padding(
-            padding: const EdgeInsets.all(28.0),
+            padding: EdgeInsets.all(padding28),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
