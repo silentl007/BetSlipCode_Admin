@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:date_time_picker/date_time_picker.dart';
 
 class CodeUpload extends StatefulWidget {
   @override
@@ -12,6 +13,7 @@ class _CodeUploadState extends State<CodeUpload> {
   final _key = GlobalKey<FormState>();
   final oddsControl = TextEditingController();
   final betcodeControl = TextEditingController();
+  final timeControl = TextEditingController();
   int initialbetType = 0;
   final List<BetCodeType> listbetType = [
     BetCodeType('General', 1),
@@ -58,7 +60,27 @@ class _CodeUploadState extends State<CodeUpload> {
     double padding28 = size.height * 0.0350;
     return SafeArea(
       child: Scaffold(
-        body: FutureBuilder(),
+        body: FutureBuilder(
+          future: getComp,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return Center(
+                child: CircularProgressIndicator(
+                  value: 3,
+                ),
+              );
+            } else if (snapshot.hasData) {
+              return form();
+            } else {
+              return ElevatedButton(
+                child: Text('Retry'),
+                onPressed: () {
+                  _retry();
+                },
+              );
+            }
+          },
+        ),
       ),
     );
   }
@@ -69,7 +91,9 @@ class _CodeUploadState extends State<CodeUpload> {
       "submitter": "test agent",
       "type": betType,
       "slipcode": betcodeControl.text,
-      "odds": oddsControl.text
+      "odds": oddsControl.text,
+      "sport": selectSports,
+      "start": timeControl.text,
     };
     print(uploadData);
     return showDialog(
@@ -124,8 +148,9 @@ class _CodeUploadState extends State<CodeUpload> {
       setState(() {
         initialbetType = 0;
         betType = '';
-        betcodeControl.text = '';
-        oddsControl.text = '';
+        betcodeControl.clear();
+        oddsControl.clear();
+        timeControl.clear();
       });
     });
   }
@@ -150,6 +175,22 @@ class _CodeUploadState extends State<CodeUpload> {
                 onChanged: (text) {
                   setState(() {
                     selectbetCompany = text;
+                  });
+                },
+              ),
+            ),
+            Container(
+              child: DropdownButton<String>(
+                value: selectSports,
+                items: sports.map<DropdownMenuItem<String>>((item) {
+                  return DropdownMenuItem(
+                    child: Text(item),
+                    value: item,
+                  );
+                }).toList(),
+                onChanged: (text) {
+                  setState(() {
+                    selectSports = text;
                   });
                 },
               ),
@@ -192,7 +233,20 @@ class _CodeUploadState extends State<CodeUpload> {
                 }).toList(),
               ),
             ),
-            RaisedButton(
+            DateTimePicker(
+              controller: timeControl,
+              type: DateTimePickerType.time,
+              timeLabelText: 'Earliest Game Time',
+              validator: (value) {
+                if (value.isEmpty) {
+                  return 'Please fill this entry';
+                }
+              },
+              onChanged: (value) {
+                print(value);
+              },
+            ),
+            ElevatedButton(
               child: Text('Upload'),
               onPressed: () {
                 var finalKey = _key.currentState;
