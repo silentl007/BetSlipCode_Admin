@@ -18,14 +18,10 @@ class _CodeUploadState extends State<CodeUpload> {
     BetCodeType('Specific', 2)
   ];
   String betType = '';
-  final List<String> betCompany = [
-    'Select Platform',
-    'Bet9ja',
-    'SportyBet',
-    'NairaBet',
-    'OnexBet'
-  ];
+  List<String> betCompany = [];
+  List<String> sports = [];
   String selectbetCompany = 'Select Platform';
+  String selectSports = 'Select Sports';
   @override
   void initState() {
     // TODO: implement initState
@@ -39,12 +35,18 @@ class _CodeUploadState extends State<CodeUpload> {
       var getList = await http.get(link);
       if (getList.statusCode == 200) {
         var decode = jsonDecode(getList.body);
-        print(decode);
+        betCompany = decode[0]['company'];
+        sports = decode[0]['sports'];
+        betCompany.insert(0, 'Select Platform');
+        sports.insert(0, 'Select Sports');
+        return betCompany;
       }
-    } catch (e) {}
+    } catch (e) {
+      print(e);
+    }
   }
 
-  _retry (){
+  _retry() {
     setState(() {
       getComp = getCompanies();
     });
@@ -127,92 +129,93 @@ class _CodeUploadState extends State<CodeUpload> {
       });
     });
   }
-  form (){
+
+  form() {
     return Form(
-          key: _key,
-          child: Padding(
-            padding: EdgeInsets.all(28),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  child: DropdownButton<String>(
-                    value: selectbetCompany,
-                    items: betCompany.map<DropdownMenuItem<String>>((item) {
-                      return DropdownMenuItem(
-                        child: Text(item),
-                        value: item,
-                      );
-                    }).toList(),
-                    onChanged: (text) {
+      key: _key,
+      child: Padding(
+        padding: EdgeInsets.all(28),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              child: DropdownButton<String>(
+                value: selectbetCompany,
+                items: betCompany.map<DropdownMenuItem<String>>((item) {
+                  return DropdownMenuItem(
+                    child: Text(item),
+                    value: item,
+                  );
+                }).toList(),
+                onChanged: (text) {
+                  setState(() {
+                    selectbetCompany = text;
+                  });
+                },
+              ),
+            ),
+            TextFormField(
+              controller: betcodeControl,
+              validator: (text) {
+                if (text.length == 0) {
+                  return 'Please insert bet code';
+                }
+              },
+              decoration: InputDecoration(labelText: 'Bet Code'),
+            ),
+            TextFormField(
+                controller: oddsControl,
+                validator: (text) {
+                  if (text.length == 0) {
+                    return 'Please insert bet odds';
+                  }
+                },
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(labelText: 'Bet Odds')),
+            SizedBox(
+              height: 5,
+            ),
+            Container(
+              child: Column(
+                children: listbetType.map((item) {
+                  return RadioListTile(
+                    groupValue: initialbetType,
+                    value: item.index,
+                    title: Text('${item.type}'),
+                    onChanged: (value) {
                       setState(() {
-                        selectbetCompany = text;
+                        initialbetType = item.index;
+                        betType = item.type;
                       });
                     },
-                  ),
-                ),
-                TextFormField(
-                  controller: betcodeControl,
-                  validator: (text) {
-                    if (text.length == 0) {
-                      return 'Please insert bet code';
-                    }
-                  },
-                  decoration: InputDecoration(labelText: 'Bet Code'),
-                ),
-                TextFormField(
-                    controller: oddsControl,
-                    validator: (text) {
-                      if (text.length == 0) {
-                        return 'Please insert bet odds';
-                      }
-                    },
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(labelText: 'Bet Odds')),
-                SizedBox(
-                  height: 5,
-                ),
-                Container(
-                  child: Column(
-                    children: listbetType.map((item) {
-                      return RadioListTile(
-                        groupValue: initialbetType,
-                        value: item.index,
-                        title: Text('${item.type}'),
-                        onChanged: (value) {
-                          setState(() {
-                            initialbetType = item.index;
-                            betType = item.type;
-                          });
-                        },
-                      );
-                    }).toList(),
-                  ),
-                ),
-                RaisedButton(
-                  child: Text('Upload'),
-                  onPressed: () {
-                    var finalKey = _key.currentState;
-                    if (finalKey.validate()) {
-                      if (selectbetCompany == 'Select Platform') {
-                        setState(() {
-                          // change color
-                        });
-                      } else if (initialbetType == 0) {
-                        setState(() {
-                          // change color
-                        });
-                      } else {
-                        finalKey.save();
-                        upload();
-                      }
-                    }
-                  },
-                )
-              ],
+                  );
+                }).toList(),
+              ),
             ),
-          ),
-        );
+            RaisedButton(
+              child: Text('Upload'),
+              onPressed: () {
+                var finalKey = _key.currentState;
+                if (finalKey.validate()) {
+                  if (selectbetCompany == 'Select Platform') {
+                    setState(() {
+                      // change color
+                    });
+                  } else if (initialbetType == 0) {
+                    setState(() {
+                      // change color
+                    });
+                  } else {
+                    finalKey.save();
+                    upload();
+                  }
+                }
+              },
+            )
+          ],
+        ),
+      ),
+    );
   }
 }
 
