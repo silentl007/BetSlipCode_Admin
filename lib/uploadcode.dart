@@ -8,6 +8,7 @@ class CodeUpload extends StatefulWidget {
 }
 
 class _CodeUploadState extends State<CodeUpload> {
+  var getComp;
   final _key = GlobalKey<FormState>();
   final oddsControl = TextEditingController();
   final betcodeControl = TextEditingController();
@@ -25,6 +26,29 @@ class _CodeUploadState extends State<CodeUpload> {
     'OnexBet'
   ];
   String selectbetCompany = 'Select Platform';
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    getComp = getCompanies();
+  }
+
+  getCompanies() async {
+    String link = 'https://betslipcode.herokuapp.com/get/company';
+    try {
+      var getList = await http.get(link);
+      if (getList.statusCode == 200) {
+        var decode = jsonDecode(getList.body);
+        print(decode);
+      }
+    } catch (e) {}
+  }
+
+  _retry (){
+    setState(() {
+      getComp = getCompanies();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,10 +56,82 @@ class _CodeUploadState extends State<CodeUpload> {
     double padding28 = size.height * 0.0350;
     return SafeArea(
       child: Scaffold(
-        body: Form(
+        body: FutureBuilder(),
+      ),
+    );
+  }
+
+  upload() async {
+    Map uploadData = {
+      "betCompany": selectbetCompany,
+      "submitter": "test agent",
+      "type": betType,
+      "slipcode": betcodeControl.text,
+      "odds": oddsControl.text
+    };
+    print(uploadData);
+    return showDialog(
+        context: context,
+        builder: (context) => FutureBuilder(
+              future: uploadFuture(uploadData),
+              builder: (BuildContext context, AsyncSnapshot snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return Container(
+                    color: Colors.transparent,
+                    child: AlertDialog(
+                      content: LinearProgressIndicator(
+                        backgroundColor: Colors.white,
+                        valueColor:
+                            new AlwaysStoppedAnimation<Color>(Colors.red),
+                      ),
+                    ),
+                  );
+                } else {
+                  return AlertDialog(
+                    content: snapshot.data == 200
+                        ? Text('Upload Successful')
+                        : snapshot.data == 500
+                            ? Text('Betcode already added')
+                            : Text('Network Error!'),
+                  );
+                }
+              },
+            ));
+  }
+
+  uploadFuture(Map data) async {
+    var encode = jsonEncode(data);
+    String link = 'https://betslipcode.herokuapp.com/post/code';
+    try {
+      var post = await http.post(link,
+          body: encode,
+          headers: {'Content-Type': 'application/json; charset=UTF-8'});
+      if (post.statusCode == 200) {
+        resetValues();
+        return post.statusCode;
+      } else {
+        return post.statusCode;
+      }
+    } catch (e) {
+      return 400;
+    }
+  }
+
+  resetValues() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+        initialbetType = 0;
+        betType = '';
+        betcodeControl.text = '';
+        oddsControl.text = '';
+      });
+    });
+  }
+  form (){
+    return Form(
           key: _key,
           child: Padding(
-            padding: EdgeInsets.all(padding28),
+            padding: EdgeInsets.all(28),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -116,75 +212,7 @@ class _CodeUploadState extends State<CodeUpload> {
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  upload() async {
-    Map uploadData = {
-      "betCompany": selectbetCompany,
-      "submitter": "test agent",
-      "type": betType,
-      "slipcode": betcodeControl.text,
-      "odds": oddsControl.text
-    };
-    print(uploadData);
-    return showDialog(
-        context: context,
-        child: FutureBuilder(
-          future: uploadFuture(uploadData),
-          builder: (BuildContext context, AsyncSnapshot snapshot) {
-            if (snapshot.connectionState != ConnectionState.done) {
-              return Container(
-                color: Colors.transparent,
-                child: AlertDialog(
-                  content: LinearProgressIndicator(
-                    backgroundColor: Colors.white,
-                    valueColor: new AlwaysStoppedAnimation<Color>(Colors.red),
-                  ),
-                ),
-              );
-            } else {
-              return AlertDialog(
-                content: snapshot.data == 200
-                    ? Text('Upload Successful')
-                    : snapshot.data == 500
-                        ? Text('Betcode already added')
-                        : Text('Network Error!'),
-              );
-            }
-          },
-        ));
-  }
-
-  uploadFuture(Map data) async {
-    var encode = jsonEncode(data);
-    String link = 'https://betslipcode.herokuapp.com/post/code';
-    try {
-      var post = await http.post(link,
-          body: encode,
-          headers: {'Content-Type': 'application/json; charset=UTF-8'});
-      if (post.statusCode == 200) {
-        resetValues();
-        return post.statusCode;
-      } else {
-        return post.statusCode;
-      }
-    } catch (e) {
-      return 400;
-    }
-  }
-
-  resetValues() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      setState(() {
-        initialbetType = 0;
-        betType = '';
-        betcodeControl.text = '';
-        oddsControl.text = '';
-      });
-    });
+        );
   }
 }
 
