@@ -1,4 +1,4 @@
-import 'package:BetSlipCode_Admin/uploadcode.dart';
+import 'package:coderealm_admin/uploadcode.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -9,7 +9,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      themeMode: ThemeMode.dark,
+      theme: ThemeData.dark(),
       home: CodeUpload(),
     );
   }

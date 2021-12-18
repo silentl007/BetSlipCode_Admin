@@ -14,6 +14,7 @@ class _CodeUploadState extends State<CodeUpload> {
   final oddsControl = TextEditingController();
   final betcodeControl = TextEditingController();
   final timeControl = TextEditingController();
+  final dateControl = TextEditingController();
   int initialbetType = 0;
   final List<BetCodeType> listbetType = [
     BetCodeType('General', 1),
@@ -24,9 +25,9 @@ class _CodeUploadState extends State<CodeUpload> {
   List<String> sports = [];
   String selectbetCompany = 'Select Platform';
   String selectSports = 'Select Sports';
+   DateTime now = new DateTime.now();
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     getComp = getCompanies();
   }
@@ -37,8 +38,8 @@ class _CodeUploadState extends State<CodeUpload> {
       var getList = await http.get(link);
       if (getList.statusCode == 200) {
         var decode = jsonDecode(getList.body);
-        betCompany = decode[0]['company'];
-        sports = decode[0]['sports'];
+        decode[0]['company'].forEach((string) => betCompany.add(string));
+        decode[0]['sports'].forEach((string) => sports.add(string));
         betCompany.insert(0, 'Select Platform');
         sports.insert(0, 'Select Sports');
         return betCompany;
@@ -56,8 +57,6 @@ class _CodeUploadState extends State<CodeUpload> {
 
   @override
   Widget build(BuildContext context) {
-    Size size = MediaQuery.of(context).size;
-    double padding28 = size.height * 0.0350;
     return SafeArea(
       child: Scaffold(
         body: FutureBuilder(
@@ -72,87 +71,19 @@ class _CodeUploadState extends State<CodeUpload> {
             } else if (snapshot.hasData) {
               return form();
             } else {
-              return ElevatedButton(
-                child: Text('Retry'),
-                onPressed: () {
-                  _retry();
-                },
+              return Center(
+                child: ElevatedButton(
+                  child: Text('Retry'),
+                  onPressed: () {
+                    _retry();
+                  },
+                ),
               );
             }
           },
         ),
       ),
     );
-  }
-
-  upload() async {
-    Map uploadData = {
-      "betCompany": selectbetCompany,
-      "submitter": "test agent",
-      "type": betType,
-      "slipcode": betcodeControl.text,
-      "odds": oddsControl.text,
-      "sport": selectSports,
-      "start": timeControl.text,
-    };
-    print(uploadData);
-    return showDialog(
-        context: context,
-        builder: (context) => FutureBuilder(
-              future: uploadFuture(uploadData),
-              builder: (BuildContext context, AsyncSnapshot snapshot) {
-                if (snapshot.connectionState != ConnectionState.done) {
-                  return Container(
-                    color: Colors.transparent,
-                    child: AlertDialog(
-                      content: LinearProgressIndicator(
-                        backgroundColor: Colors.white,
-                        valueColor:
-                            new AlwaysStoppedAnimation<Color>(Colors.red),
-                      ),
-                    ),
-                  );
-                } else {
-                  return AlertDialog(
-                    content: snapshot.data == 200
-                        ? Text('Upload Successful')
-                        : snapshot.data == 500
-                            ? Text('Betcode already added')
-                            : Text('Network Error!'),
-                  );
-                }
-              },
-            ));
-  }
-
-  uploadFuture(Map data) async {
-    var encode = jsonEncode(data);
-    String link = 'https://betslipcode.herokuapp.com/post/code';
-    try {
-      var post = await http.post(link,
-          body: encode,
-          headers: {'Content-Type': 'application/json; charset=UTF-8'});
-      if (post.statusCode == 200) {
-        resetValues();
-        return post.statusCode;
-      } else {
-        return post.statusCode;
-      }
-    } catch (e) {
-      return 400;
-    }
-  }
-
-  resetValues() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      setState(() {
-        initialbetType = 0;
-        betType = '';
-        betcodeControl.clear();
-        oddsControl.clear();
-        timeControl.clear();
-      });
-    });
   }
 
   form() {
@@ -197,6 +128,7 @@ class _CodeUploadState extends State<CodeUpload> {
             ),
             TextFormField(
               controller: betcodeControl,
+              // ignore: missing_return
               validator: (text) {
                 if (text.length == 0) {
                   return 'Please insert bet code';
@@ -206,6 +138,7 @@ class _CodeUploadState extends State<CodeUpload> {
             ),
             TextFormField(
                 controller: oddsControl,
+                // ignore: missing_return
                 validator: (text) {
                   if (text.length == 0) {
                     return 'Please insert bet odds';
@@ -216,36 +149,49 @@ class _CodeUploadState extends State<CodeUpload> {
             SizedBox(
               height: 5,
             ),
-            Container(
-              child: Column(
-                children: listbetType.map((item) {
-                  return RadioListTile(
-                    groupValue: initialbetType,
-                    value: item.index,
-                    title: Text('${item.type}'),
-                    onChanged: (value) {
-                      setState(() {
-                        initialbetType = item.index;
-                        betType = item.type;
-                      });
-                    },
-                  );
-                }).toList(),
-              ),
-            ),
+            // Container(
+            //   child: Column(
+            //     children: listbetType.map((item) {
+            //       return RadioListTile(
+            //         groupValue: initialbetType,
+            //         value: item.index,
+            //         title: Text('${item.type}'),
+            //         onChanged: (value) {
+            //           setState(() {
+            //             initialbetType = item.index;
+            //             betType = item.type;
+            //           });
+            //         },
+            //       );
+            //     }).toList(),
+            //   ),
+            // ),
             DateTimePicker(
               controller: timeControl,
               type: DateTimePickerType.time,
               timeLabelText: 'Earliest Game Time',
+              // ignore: missing_return
               validator: (value) {
                 if (value.isEmpty) {
                   return 'Please fill this entry';
                 }
               },
-              onChanged: (value) {
-                print(value);
+            ),
+            Divider(),
+            DateTimePicker(
+              controller: dateControl,
+              firstDate: DateTime(now.year, now.month, now.day),
+              lastDate: DateTime(2300),
+              type: DateTimePickerType.date,
+              dateLabelText: 'Earliest Date Time',
+              // ignore: missing_return
+              validator: (value) {
+                if (value.isEmpty) {
+                  return 'Please fill this entry';
+                }
               },
             ),
+            Divider(),
             ElevatedButton(
               child: Text('Upload'),
               onPressed: () {
@@ -255,11 +201,17 @@ class _CodeUploadState extends State<CodeUpload> {
                     setState(() {
                       // change color
                     });
-                  } else if (initialbetType == 0) {
+                  } else if (selectSports == 'Select Sports'){
                     setState(() {
-                      // change color
+                      
                     });
-                  } else {
+                  } 
+                  // else if (initialbetType == 0) {
+                  //   setState(() {
+                  //     // change color
+                  //   });
+                  // } 
+                  else {
                     finalKey.save();
                     upload();
                   }
@@ -270,6 +222,77 @@ class _CodeUploadState extends State<CodeUpload> {
         ),
       ),
     );
+  }
+
+  upload() async {
+    return showDialog(
+        context: context,
+        builder: (context) => FutureBuilder(
+              future: uploadFuture(),
+              builder: (BuildContext context, AsyncSnapshot snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return Container(
+                    color: Colors.transparent,
+                    child: AlertDialog(
+                      content: LinearProgressIndicator(
+                        backgroundColor: Colors.white,
+                        valueColor:
+                            new AlwaysStoppedAnimation<Color>(Colors.red),
+                      ),
+                    ),
+                  );
+                } else {
+                  return AlertDialog(
+                    content: snapshot.data == 200
+                        ? Text('Upload Successful')
+                        : snapshot.data == 500
+                            ? Text('Betcode already added')
+                            : Text('Network Error!'),
+                  );
+                }
+              },
+            ));
+  }
+
+  uploadFuture() async {
+    Map uploadData = {
+      "betCompany": selectbetCompany,
+      "submitter": "test agent",
+      "type": betType,
+      "slipcode": betcodeControl.text,
+      "odds": oddsControl.text,
+      "sport": selectSports,
+      "start": timeControl.text,
+      "startdate": dateControl.text
+    };
+    var encode = jsonEncode(uploadData);
+    String link = 'https://betslipcode.herokuapp.com/post/code';
+    try {
+      var post = await http.post(link,
+          body: encode,
+          headers: {'Content-Type': 'application/json; charset=UTF-8'});
+      if (post.statusCode == 200) {
+        resetValues();
+        return post.statusCode;
+      } else {
+        return post.statusCode;
+      }
+    } catch (e) {
+      return 400;
+    }
+  }
+
+  resetValues() {
+    var finalKey = _key.currentState;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+        initialbetType = 0;
+        betType = '';
+        finalKey.reset();
+        selectbetCompany = 'Select Platform';
+        selectSports = 'Select Sports';
+      });
+    });
   }
 }
 
