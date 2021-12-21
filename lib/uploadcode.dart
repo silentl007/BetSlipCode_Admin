@@ -4,12 +4,16 @@ import 'package:http/http.dart' as http;
 import 'package:date_time_picker/date_time_picker.dart';
 
 class CodeUpload extends StatefulWidget {
+  final String agent;
+  CodeUpload(this.agent);
   @override
   _CodeUploadState createState() => _CodeUploadState();
 }
 
 class _CodeUploadState extends State<CodeUpload> {
   var getComp;
+  // var notifi;
+  // var upcode;
   final _key = GlobalKey<FormState>();
   final oddsControl = TextEditingController();
   final betcodeControl = TextEditingController();
@@ -25,11 +29,13 @@ class _CodeUploadState extends State<CodeUpload> {
   List<String> sports = [];
   String selectbetCompany = 'Select Platform';
   String selectSports = 'Select Sports';
-   DateTime now = new DateTime.now();
+  DateTime now = new DateTime.now();
   @override
   void initState() {
     super.initState();
     getComp = getCompanies();
+    // notifi = notify();
+    // upcode = uploadFuture();
   }
 
   getCompanies() async {
@@ -138,6 +144,7 @@ class _CodeUploadState extends State<CodeUpload> {
             ),
             TextFormField(
                 controller: oddsControl,
+                textCapitalization: TextCapitalization.characters,
                 // ignore: missing_return
                 validator: (text) {
                   if (text.length == 0) {
@@ -149,23 +156,6 @@ class _CodeUploadState extends State<CodeUpload> {
             SizedBox(
               height: 5,
             ),
-            // Container(
-            //   child: Column(
-            //     children: listbetType.map((item) {
-            //       return RadioListTile(
-            //         groupValue: initialbetType,
-            //         value: item.index,
-            //         title: Text('${item.type}'),
-            //         onChanged: (value) {
-            //           setState(() {
-            //             initialbetType = item.index;
-            //             betType = item.type;
-            //           });
-            //         },
-            //       );
-            //     }).toList(),
-            //   ),
-            // ),
             DateTimePicker(
               controller: timeControl,
               type: DateTimePickerType.time,
@@ -201,27 +191,81 @@ class _CodeUploadState extends State<CodeUpload> {
                     setState(() {
                       // change color
                     });
-                  } else if (selectSports == 'Select Sports'){
-                    setState(() {
-                      
-                    });
-                  } 
-                  // else if (initialbetType == 0) {
-                  //   setState(() {
-                  //     // change color
-                  //   });
-                  // } 
-                  else {
+                  } else if (selectSports == 'Select Sports') {
+                    setState(() {});
+                  } else {
                     finalKey.save();
                     upload();
                   }
                 }
               },
-            )
+            ),
+            SizedBox(
+              height: 20,
+            ),
+            widget.agent == 'Gangster Baby'
+                ? ElevatedButton(
+                    onPressed: () {
+                      notifyDiag();
+                    },
+                    child: Text('Notify'))
+                : Container()
           ],
         ),
       ),
     );
+  }
+
+  notify() async {
+    print('------------------ ia am called');
+    var link = Uri.parse('https://fcm.googleapis.com/fcm/send');
+    Map<String, dynamic> body = {
+      'notification': <String, dynamic>{
+        'body': "Hello CodeRealmer! Today's codes are currently available",
+      },
+      'priority': 'high',
+      'to': '/topics/coderealm',
+    };
+    var encodeData = jsonEncode(body);
+    try {
+      var sendNotif = await http.post(link, body: encodeData, headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization':
+            'key=AAAAvLZo-Hk:APA91bEssqW19374tIKtY1YwRVGqG2r4Gl726hcD6SN212YmWavQy4wQPzCMWr_SLBDpoj2DbXKA6eCIyVfMu0I-qGKjwBpjf0oRNJkLjpDdCO8OW8BQ_0Bq9WVd_yCxRJQhgQFMzxN7'
+      });
+      return sendNotif.statusCode;
+    } catch (e) {
+      print('------------ FCM Error $e -----------------');
+      return null;
+    }
+  }
+
+  notifyDiag() async {
+    return showDialog(
+        context: context,
+        builder: (context) => FutureBuilder(
+              future: notify(),
+              builder: (BuildContext context, AsyncSnapshot snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return Container(
+                    color: Colors.transparent,
+                    child: AlertDialog(
+                      content: LinearProgressIndicator(
+                        backgroundColor: Colors.white,
+                        valueColor:
+                            new AlwaysStoppedAnimation<Color>(Colors.red),
+                      ),
+                    ),
+                  );
+                } else {
+                  return AlertDialog(
+                    content: snapshot.data == 200
+                        ? Text('Users notified!')
+                        : Text('Something went wrong check console!'),
+                  );
+                }
+              },
+            ));
   }
 
   upload() async {
@@ -257,7 +301,7 @@ class _CodeUploadState extends State<CodeUpload> {
   uploadFuture() async {
     Map uploadData = {
       "betCompany": selectbetCompany,
-      "submitter": "test agent",
+      "submitter": widget.agent ?? "test agent",
       "type": betType,
       "slipcode": betcodeControl.text,
       "odds": oddsControl.text,
