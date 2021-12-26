@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:date_time_picker/date_time_picker.dart';
 
@@ -39,7 +40,8 @@ class _CodeUploadState extends State<CodeUpload> {
   }
 
   getCompanies() async {
-    String link = 'https://betslipcode.herokuapp.com/get/company';
+    await dotenv.load(fileName: 'file.env');
+    String link = '${dotenv.env['api_prefix']}/get/company';
     try {
       var getList = await http.get(link);
       if (getList.statusCode == 200) {
@@ -203,7 +205,7 @@ class _CodeUploadState extends State<CodeUpload> {
             SizedBox(
               height: 20,
             ),
-            widget.agent == 'Gangster Baby'
+            widget.agent == 'g'
                 ? ElevatedButton(
                     onPressed: () {
                       notifyDiag();
@@ -217,11 +219,17 @@ class _CodeUploadState extends State<CodeUpload> {
   }
 
   notify() async {
-    print('------------------ ia am called');
+    await dotenv.load(fileName: 'file.env');
     var link = Uri.parse('https://fcm.googleapis.com/fcm/send');
     Map<String, dynamic> body = {
       'notification': <String, dynamic>{
         'body': "Hello CodeRealmer! Today's codes are currently available",
+      },
+      "data": {
+        "message": "Hello CodeRealmer! Today's codes are currently available",
+        "title": "CodeRealm",
+        "key_1": "Key 1 value",
+        "key_2": "Hello",
       },
       'priority': 'high',
       'to': '/topics/coderealm',
@@ -231,7 +239,7 @@ class _CodeUploadState extends State<CodeUpload> {
       var sendNotif = await http.post(link, body: encodeData, headers: {
         'Content-Type': 'application/json; charset=UTF-8',
         'Authorization':
-            'key=AAAAvLZo-Hk:APA91bEssqW19374tIKtY1YwRVGqG2r4Gl726hcD6SN212YmWavQy4wQPzCMWr_SLBDpoj2DbXKA6eCIyVfMu0I-qGKjwBpjf0oRNJkLjpDdCO8OW8BQ_0Bq9WVd_yCxRJQhgQFMzxN7'
+            'key=${dotenv.env['fcm_key']}'
       });
       return sendNotif.statusCode;
     } catch (e) {
@@ -299,6 +307,7 @@ class _CodeUploadState extends State<CodeUpload> {
   }
 
   uploadFuture() async {
+    await dotenv.load(fileName: 'file.env');
     Map uploadData = {
       "betCompany": selectbetCompany,
       "submitter": widget.agent ?? "test agent",
@@ -310,7 +319,7 @@ class _CodeUploadState extends State<CodeUpload> {
       "startdate": dateControl.text
     };
     var encode = jsonEncode(uploadData);
-    String link = 'https://betslipcode.herokuapp.com/post/code';
+    String link = '${dotenv.env['api_prefix']}/post/code';
     try {
       var post = await http.post(link,
           body: encode,
